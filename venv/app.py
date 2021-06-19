@@ -1,19 +1,13 @@
 import os
-from flask import Flask, render_template, session, send_file
-from user_database import get_cities, data
-from charts import get_main_image, get_city_image
 from functools import wraps
-import secrets
+from flask import Flask, render_template, send_file, request, session, redirect, url_for
 
-from dotenv import load_dotenv   #for python-dotenv method
-load_dotenv()                    #for python-dotenv method
-
-password = os.environ.get('password')
-
-print("password is: ", password)
-
+from user_database import CITIES, MONTHS, data, get_city_temperature, get_city_humidity
+from user_database import db_session as db_session
+from charts import get_city_image, get_main_image
 
 app = Flask(__name__)
+
 
 @app.route('/')
 def main():
@@ -27,21 +21,6 @@ def main_plot():
     """The view for rendering the scatter chart"""
     img = get_main_image()
     return send_file(img, mimetype='image/png', cache_timeout=0)
-
-
-@app.route('/city/<int:city_id>')
-def city(city_id):
-    """Views for the city details"""
-    city_record = data.get(city_id)
-    return render_template('city.html', city_name=city_record.city_name, city_id=city_id,
-                           city_climate=city_record.city_climate)
-
-
-@app.route('/city<int:city_id>.png')
-def city_plot(city_id):
-    """Views for rendering city specific charts"""
-    img = get_city_image(city_id)
-    return send_file(img, mimetype='image/png', cache_timeout=0,)
 
 
 @app.route('/login/<int:city_id>',  methods=["GET", "POST"])
@@ -76,7 +55,24 @@ def login_required(f):
         return redirect(url_for('login'))
     return wrap
 
+
 app.secret_key = os.environ['FLASK_WEB_APP_KEY']
+
+
+@app.route('/city/<int:city_id>')
+def city(city_id):
+    """Views for the city details"""
+    city_record = data.get(city_id)
+    return render_template('city.html', city_name=city_record.city_name, city_id=city_id,
+                           city_climate=city_record.city_climate)
+
+
+@app.route('/city<int:city_id>.png')
+def city_plot(city_id):
+    """Views for rendering city specific charts"""
+    img = get_city_image(city_id)
+    return send_file(img, mimetype='image/png', cache_timeout=0,)
+
 
 @app.route('/edit/<int:city_id>', methods=["GET", "POST"])
 @login_required
@@ -90,7 +86,7 @@ def edit_database(city_id):
         if request.method == "POST":
             # Get data from the form
             for i in range(12):
-                # In a production application we ought to validate the input data
+                # We ought to validate the input data, but this is a toy example so we don't really care
                 month_temperature.append(float(request.form[f'temperature{i}']))
                 month_humidity.append(int(request.form[f'humidity{i}']))
 
@@ -103,10 +99,10 @@ def edit_database(city_id):
             return redirect(url_for('main', city_id=city_id))
         else:
             return render_template('edit.html', city_name=city_record.city_name, city_id=city_id, months=MONTHS,
-                                                          meteo=meteo)
+                                   meteo=meteo)
     except Exception as error:
         return render_template('edit.html', city_name=city_record.city_name, city_id=city_id, months=MONTHS,
-                      meteo=meteo, error=error)
+                               meteo=meteo, error=error)
 
 
 if __name__ == '__main__':
