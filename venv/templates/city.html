@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="../static/style.css" rel="stylesheet" type="text/css">
+    <title>{{ city_name }}</title>
+</head>
+<body>
+    <div id="element1">
+        <img src="{{ url_for('city_plot', city_id=city_id) }}" alt="Image">
+    </div>
+    <div id="element2">
+        <p>This graph shows mean daily temperature and average relative humidity in {{ city_name }}.</p>
+        <p> {{ city_climate }}</p>
+        {% if session['logged_in'] %}
+        <p>Want to add more data?</p>
+        <p>Go and <a href="{{ url_for('edit_database', city_id=city_id) }}">edit</a> the meteo database.</p>
+        {% else %}
+        <p>Want to edit meteo data?</p>
+        <p>Please <a href="{{ url_for('login', city_id=city_id) }}">login</a> first.</p>
+        {% endif %}
+        <hr/>
+        <p><a href="/">Back to the main page</a></p>
+    </div>
+</body>
+</html>
